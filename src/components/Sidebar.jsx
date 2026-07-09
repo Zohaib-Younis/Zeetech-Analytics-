@@ -32,10 +32,20 @@ export default function Sidebar({
   ];
 
   return (
-    <aside
-      className={`fixed top-0 left-0 z-30 h-screen bg-card-bg border-r border-border-main flex flex-col transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'
-        }`}
-    >
+    <>
+      {/* Mobile Backdrop */}
+      {!isCollapsed && (
+        <div 
+          className="md:hidden fixed inset-0 bg-black/50 z-30 transition-opacity"
+          onClick={() => setIsCollapsed(true)}
+        />
+      )}
+
+      <aside
+        className={`fixed top-0 left-0 z-40 h-screen bg-card-bg border-r border-border-main flex flex-col transition-all duration-300 
+          ${isCollapsed ? '-translate-x-full md:translate-x-0 md:w-20 w-64' : 'translate-x-0 w-64'}
+        `}
+      >
       {/* Brand logo */}
       <div className="h-16 flex items-center justify-between px-4 border-b border-border-main">
         <div className="flex items-center gap-2 overflow-hidden">
@@ -44,7 +54,7 @@ export default function Sidebar({
           </div>
           {!isCollapsed && (
             <span className="font-display font-bold text-lg bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent truncate">
-              Zeetect Analytics
+              HawkEye Intelligence
             </span>
           )}
         </div>
@@ -114,5 +124,6 @@ export default function Sidebar({
         )}
       </div>
     </aside>
+    </>
   );
 }

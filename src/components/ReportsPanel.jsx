@@ -249,7 +249,7 @@ export default function ReportsPanel({ data, selectedColumns }) {
 
           {/* Printable Footer */}
           <div className="border-t border-slate-100 pt-5 flex items-center justify-between text-[9px] text-slate-400 font-light mt-6">
-            <span>Zeetech Analytics Report Studio</span>
+            <span>HawkEye Intelligence Report Studio</span>
             <span>Page 1 of 1</span>
           </div>
 

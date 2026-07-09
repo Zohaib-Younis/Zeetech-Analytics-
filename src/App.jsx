@@ -67,7 +67,7 @@ export default function App() {
         <div className="min-h-screen bg-dashboard-bg flex flex-col justify-between">
           <header className="h-16 flex items-center justify-between px-8 border-b border-border-main bg-card-bg/60 backdrop-blur-md sticky top-0 z-20">
             <span className="font-display font-extrabold text-lg bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
-              Antigravity BI
+              HawkEye Intelligence
             </span>
             <button
               onClick={() => setCurrentSection('landing')}
@@ -80,7 +80,7 @@ export default function App() {
             <UploadZone onDataLoaded={handleDataLoaded} />
           </div>
           <footer className="h-12 border-t border-border-main flex items-center justify-center text-[10px] text-text-muted">
-            © {new Date().getFullYear()} Antigravity Data Platform. All rights reserved.
+            © {new Date().getFullYear()} HawkEye Data Platform. All rights reserved.
           </footer>
         </div>
       );

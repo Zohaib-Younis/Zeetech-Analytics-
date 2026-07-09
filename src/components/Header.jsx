@@ -65,7 +65,7 @@ export default function Header({
       <div className="flex items-center gap-4">
         <button 
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className="p-1.5 rounded-lg hover:bg-purple-500/10 text-text-muted hover:text-purple-600 focus:outline-none"
+          className="md:hidden p-1.5 rounded-lg hover:bg-purple-500/10 text-text-muted hover:text-purple-600 focus:outline-none"
         >
           <Menu className="w-5 h-5" />
         </button>
@@ -161,7 +161,7 @@ export default function Header({
             <div className="absolute right-0 mt-3 w-56 rounded-2xl glass-card shadow-xl border border-border-main overflow-hidden z-50">
               <div className="p-4 bg-purple-500/5 border-b border-border-main">
                 <p className="text-xs font-semibold text-text-main">John Doe</p>
-                <p className="text-[10px] text-text-muted truncate">john.doe@antigravity.ai</p>
+                <p className="text-[10px] text-text-muted truncate">john.doe@hawkeye.ai</p>
               </div>
               <div className="p-1.5 space-y-0.5">
                 <button className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-text-muted hover:text-purple-600 hover:bg-purple-500/10 transition-colors">
