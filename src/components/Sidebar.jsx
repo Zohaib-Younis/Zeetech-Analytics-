@@ -114,11 +114,11 @@ export default function Sidebar({
       {/* Footer / Account Info */}
       <div className="p-4 border-t border-border-main flex items-center gap-3">
         <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-purple-500 to-indigo-500 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-md">
-          JD
+          AM
         </div>
         {!isCollapsed && (
           <div className="overflow-hidden">
-            <h4 className="text-xs font-semibold text-text-main truncate">John Doe</h4>
+            <h4 className="text-xs font-semibold text-text-main truncate">Adeel Mumtaz</h4>
             <p className="text-[10px] text-text-muted truncate">Analyst Account</p>
           </div>
         )}

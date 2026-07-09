@@ -153,15 +153,15 @@ export default function Header({
             className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-purple-500/10 transition-all border border-transparent hover:border-border-main"
           >
             <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-purple-500 to-indigo-500 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
-              JD
+              AM
             </div>
           </button>
 
           {showProfile && (
             <div className="absolute right-0 mt-3 w-56 rounded-2xl glass-card shadow-xl border border-border-main overflow-hidden z-50">
               <div className="p-4 bg-purple-500/5 border-b border-border-main">
-                <p className="text-xs font-semibold text-text-main">John Doe</p>
-                <p className="text-[10px] text-text-muted truncate">john.doe@hawkeye.ai</p>
+                <p className="text-xs font-semibold text-text-main">Adeel Mumtaz</p>
+                <p className="text-[10px] text-text-muted truncate">adeel@gmail.com</p>
               </div>
               <div className="p-1.5 space-y-0.5">
                 <button className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-text-muted hover:text-purple-600 hover:bg-purple-500/10 transition-colors">

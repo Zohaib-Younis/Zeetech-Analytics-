@@ -12,6 +12,7 @@ import PivotTable from './components/PivotTable';
 import ReportsPanel from './components/ReportsPanel';
 import ExportPanel from './components/ExportPanel';
 import SettingsPanel from './components/SettingsPanel';
+import Login from './components/Login';
 
 export default function App() {
   const [sheetData, setSheetData] = useState(null);
@@ -20,6 +21,7 @@ export default function App() {
   const [theme, setTheme] = useState('light');
   const [searchValue, setSearchValue] = useState('');
   const [selectedColumns, setSelectedColumns] = useState({});
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // Detect and set initial dark/light class
   useEffect(() => {
@@ -59,6 +61,10 @@ export default function App() {
     setSearchValue('');
     setCurrentSection('landing');
   };
+
+  if (!isAuthenticated) {
+    return <Login onLogin={() => setIsAuthenticated(true)} />;
+  }
 
   // Determine active view when NO file is uploaded
   if (!sheetData) {
