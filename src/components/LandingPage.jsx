@@ -56,6 +56,31 @@ export default function LandingPage({ onDataLoaded }) {
           </span>
         </motion.div>
 
+        {/* User Profile Info */}
+        <motion.div 
+          variants={itemVariants}
+          className="flex flex-col items-center gap-3 mb-6"
+        >
+          <div className="relative">
+            <div className="w-32 h-32 rounded-full p-1 bg-gradient-to-tr from-purple-500 to-indigo-500 shadow-lg shadow-purple-500/20 hover:scale-105 transition-transform cursor-pointer">
+              <img 
+                src="/zohaib.jpeg" 
+                alt="Zohaib Younis"
+                className="w-full h-full object-cover rounded-full border-4 border-dashboard-bg"
+              />
+            </div>
+            <div className="absolute bottom-1 right-2 w-6 h-6 bg-emerald-500 border-[3px] border-dashboard-bg rounded-full"></div>
+          </div>
+          <div className="text-center">
+            <h2 className="text-xl font-bold text-text-main">
+              Zohaib Younis <span className="text-sm font-medium text-purple-500 ml-1">(Fullstack Developer)</span>
+            </h2>
+            <p className="text-sm text-text-muted mt-1 flex items-center justify-center gap-1.5 font-medium">
+              <MapPin className="w-3.5 h-3.5 text-indigo-500" /> Working in SPManchester Pvt Ltd
+            </p>
+          </div>
+        </motion.div>
+
         {/* Title */}
         <motion.h1 
           variants={itemVariants}
