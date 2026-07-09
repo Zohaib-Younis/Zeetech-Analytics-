@@ -21,7 +21,7 @@ export default function App() {
   const [theme, setTheme] = useState('light');
   const [searchValue, setSearchValue] = useState('');
   const [selectedColumns, setSelectedColumns] = useState({});
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => localStorage.getItem('rememberedAuth') === 'true');
 
   // Detect and set initial dark/light class
   useEffect(() => {
@@ -194,6 +194,10 @@ export default function App() {
           sidebarCollapsed={sidebarCollapsed}
           setSidebarCollapsed={setSidebarCollapsed}
           fileName={sheetData.fileName}
+          onLogout={() => {
+            setIsAuthenticated(false);
+            localStorage.removeItem('rememberedAuth');
+          }}
         />
 
         {/* Content Container */}

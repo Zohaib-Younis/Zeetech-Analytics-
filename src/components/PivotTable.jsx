@@ -426,11 +426,34 @@ function FilterPanel({ filterFields, rows, filterState, onFilterChange }) {
 export default function PivotTable({ data }) {
   const { headers, rows, columnTypes } = data;
 
+  // Default configurations based on available headers
+  const getDefaultZones = (availableHeaders) => {
+    const initialZones = { rows: [], columns: [], values: [], filters: [] };
+    if (availableHeaders.includes('BParty')) initialZones.rows.push('BParty');
+    if (availableHeaders.includes('CallType')) initialZones.columns.push('CallType');
+    if (availableHeaders.includes('Duration')) initialZones.values.push('Duration');
+    return initialZones;
+  };
+
+  const getDefaultAggs = (availableHeaders) => {
+    const initialAggs = {};
+    if (availableHeaders.includes('Duration')) initialAggs['Duration'] = 'Sum';
+    return initialAggs;
+  };
+
   // Field zones
-  const [zones, setZones] = useState({ rows: [], columns: [], values: [], filters: [] });
-  const [valueAggs, setValueAggs]   = useState({}); // field -> agg function
+  const [zones, setZones] = useState(() => getDefaultZones(headers));
+  const [valueAggs, setValueAggs]   = useState(() => getDefaultAggs(headers)); // field -> agg function
   const [filterState, setFilterState] = useState({}); // field -> Set of allowed values
   const [sortState, setSortState]   = useState({ col: null, dir: null });
+
+  // Update defaults if data changes significantly (optional, but good if they change files without unmounting)
+  useEffect(() => {
+    setZones(getDefaultZones(headers));
+    setValueAggs(getDefaultAggs(headers));
+    setFilterState({});
+    setSortState({ col: null, dir: null });
+  }, [headers]);
 
   // Track all placed fields
   const placedFields = useMemo(() =>
@@ -498,8 +521,8 @@ export default function PivotTable({ data }) {
   }, []);
 
   const handleReset = () => {
-    setZones({ rows: [], columns: [], values: [], filters: [] });
-    setValueAggs({});
+    setZones(getDefaultZones(headers));
+    setValueAggs(getDefaultAggs(headers));
     setFilterState({});
     setSortState({ col: null, dir: null });
   };

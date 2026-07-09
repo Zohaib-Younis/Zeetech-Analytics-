@@ -21,7 +21,8 @@ export default function Header({
   searchValue,
   sidebarCollapsed,
   setSidebarCollapsed,
-  fileName
+  fileName,
+  onLogout
 }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
@@ -171,7 +172,10 @@ export default function Header({
                   <Settings className="w-4 h-4" /> Account Settings
                 </button>
                 <div className="border-t border-border-main my-1" />
-                <button className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-pink-500 hover:bg-pink-500/10 transition-colors text-left">
+                <button 
+                  onClick={onLogout}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-pink-500 hover:bg-pink-500/10 transition-colors text-left"
+                >
                   <LogOut className="w-4 h-4" /> Sign Out
                 </button>
               </div>

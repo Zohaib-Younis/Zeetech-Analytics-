@@ -6,10 +6,14 @@ export default function Login({ onLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (email === 'adeel@gmail.com' && password === 'humaira') {
+      if (rememberMe) {
+        localStorage.setItem('rememberedAuth', 'true');
+      }
       onLogin();
     } else {
       setError('Invalid email or password');
@@ -100,6 +104,21 @@ export default function Login({ onLogin }) {
                 {error}
               </p>
             )}
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <input
+                  id="remember-me"
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-border-main rounded cursor-pointer"
+                />
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-text-main cursor-pointer select-none">
+                  Remember me
+                </label>
+              </div>
+            </div>
 
             <div>
               <button
