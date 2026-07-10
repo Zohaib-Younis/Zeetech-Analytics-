@@ -8,7 +8,12 @@ let configured = !!(supabaseUrl && supabaseKey);
 
 if (configured) {
   try {
-    supabaseClient = createClient(supabaseUrl, supabaseKey);
+    supabaseClient = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        persistSession: false,  // Don't save session in localStorage — always require login on fresh visit
+        autoRefreshToken: false,
+      }
+    });
   } catch (err) {
     console.error('Failed to initialize Supabase client. Check if your URL is valid:', err);
     configured = false;
