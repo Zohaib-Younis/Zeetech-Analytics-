@@ -71,12 +71,16 @@ function ChangeEmailSection({ onLogout }) {
   const [loading, setLoading]  = useState(false);
   const [msg, setMsg]          = useState({ type: '', text: '' });
   const [currentEmail, setCurrentEmail] = useState('');
+  
+  const isCodeAuth = localStorage.getItem('codeAuth') === 'true';
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data?.user?.email) setCurrentEmail(data.user.email);
-    });
-  }, []);
+    if (!isCodeAuth) {
+      supabase.auth.getUser().then(({ data }) => {
+        if (data?.user?.email) setCurrentEmail(data.user.email);
+      });
+    }
+  }, [isCodeAuth]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -103,26 +107,34 @@ function ChangeEmailSection({ onLogout }) {
 
   return (
     <SectionCard icon={Mail} title="Change Email Address" color="indigo">
-      {currentEmail && (
-        <p className="text-xs text-text-muted">
-          Current email: <span className="text-text-main font-semibold">{currentEmail}</span>
-        </p>
+      {isCodeAuth ? (
+        <div className="bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 p-4 rounded-xl text-xs leading-relaxed">
+          <strong>Restricted Action:</strong> You are currently logged in via a temporary recovery code. You must log out and sign in with your actual password to change your email.
+        </div>
+      ) : (
+        <>
+          {currentEmail && (
+            <p className="text-xs text-text-muted">
+              Current email: <span className="text-text-main font-semibold">{currentEmail}</span>
+            </p>
+          )}
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <InputField
+              label="New Email Address"
+              type="email"
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+              placeholder="newemail@example.com"
+              disabled={loading}
+            />
+            <Alert type={msg.type} msg={msg.text} />
+            <button type="submit" disabled={loading || !newEmail.trim()}
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm">
+              {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Updating…</> : <><Mail className="w-4 h-4" /> Update Email</>}
+            </button>
+          </form>
+        </>
       )}
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <InputField
-          label="New Email Address"
-          type="email"
-          value={newEmail}
-          onChange={(e) => setNewEmail(e.target.value)}
-          placeholder="newemail@example.com"
-          disabled={loading}
-        />
-        <Alert type={msg.type} msg={msg.text} />
-        <button type="submit" disabled={loading || !newEmail.trim()}
-          className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm">
-          {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Updating…</> : <><Mail className="w-4 h-4" /> Update Email</>}
-        </button>
-      </form>
     </SectionCard>
   );
 }
@@ -135,6 +147,8 @@ function ChangePasswordSection({ onLogout }) {
   const [showConf, setShowConf]   = useState(false);
   const [loading, setLoading]     = useState(false);
   const [msg, setMsg]             = useState({ type: '', text: '' });
+  
+  const isCodeAuth = localStorage.getItem('codeAuth') === 'true';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -162,19 +176,25 @@ function ChangePasswordSection({ onLogout }) {
 
   return (
     <SectionCard icon={Lock} title="Change Password" color="purple">
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <InputField label="New Password" value={newPass} onChange={(e) => setNewPass(e.target.value)}
-          placeholder="Min. 6 characters" disabled={loading}
-          showToggle show={showNew} onToggle={() => setShowNew(p => !p)} />
-        <InputField label="Confirm New Password" value={confirmPass} onChange={(e) => setConfirmPass(e.target.value)}
-          placeholder="Repeat new password" disabled={loading}
-          showToggle show={showConf} onToggle={() => setShowConf(p => !p)} />
-        <Alert type={msg.type} msg={msg.text} />
-        <button type="submit" disabled={loading || !newPass || !confirmPass}
-          className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold text-white bg-purple-600 hover:bg-purple-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm">
-          {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Updating…</> : <><KeyRound className="w-4 h-4" /> Update Password</>}
-        </button>
-      </form>
+      {isCodeAuth ? (
+        <div className="bg-purple-500/10 border border-purple-500/20 text-purple-500 p-4 rounded-xl text-xs leading-relaxed">
+          <strong>Restricted Action:</strong> You are logged in using a temporary recovery code. To change your password, you must use the Supabase dashboard directly, or log in with your current password first.
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <InputField label="New Password" value={newPass} onChange={(e) => setNewPass(e.target.value)}
+            placeholder="Min. 6 characters" disabled={loading}
+            showToggle show={showNew} onToggle={() => setShowNew(p => !p)} />
+          <InputField label="Confirm New Password" value={confirmPass} onChange={(e) => setConfirmPass(e.target.value)}
+            placeholder="Repeat new password" disabled={loading}
+            showToggle show={showConf} onToggle={() => setShowConf(p => !p)} />
+          <Alert type={msg.type} msg={msg.text} />
+          <button type="submit" disabled={loading || !newPass || !confirmPass}
+            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold text-white bg-purple-600 hover:bg-purple-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm">
+            {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Updating…</> : <><KeyRound className="w-4 h-4" /> Update Password</>}
+          </button>
+        </form>
+      )}
     </SectionCard>
   );
 }
