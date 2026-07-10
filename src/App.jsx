@@ -25,6 +25,7 @@ export default function App() {
   const [selectedColumns, setSelectedColumns] = useState({});
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authLoading, setAuthLoading]         = useState(true);
+  const [skipLanding, setSkipLanding]         = useState(false);
 
   // Detect and set initial dark/light class
   useEffect(() => {
@@ -93,7 +94,7 @@ export default function App() {
     setSheetData(null);
     setSelectedColumns({});
     setSearchValue('');
-    setCurrentSection('landing');
+    setCurrentSection('upload'); // Default to upload view in dashboard when resetting
   };
 
   // Handle missing Vercel environment variables directly on screen
@@ -136,8 +137,8 @@ export default function App() {
     return <Login onLogin={() => setIsAuthenticated(true)} />;
   }
 
-  // Determine active view when NO file is uploaded
-  if (!sheetData) {
+  // Determine active view when NO file is uploaded and user hasn't clicked "Go to Dashboard"
+  if (!sheetData && !skipLanding) {
     if (currentSection === 'upload_view') {
       return (
         <div className="min-h-screen bg-dashboard-bg flex flex-col justify-between">
@@ -162,11 +163,16 @@ export default function App() {
       );
     }
     // Default Landing view
-    return <LandingPage onDataLoaded={handleDataLoaded} />;
+    return <LandingPage onDataLoaded={handleDataLoaded} onSkip={() => setSkipLanding(true)} />;
   }
 
-  // Active section renderer (with sheetData present)
+  // Active section renderer (handles both data present and empty states)
   const renderMainSection = () => {
+    // If no data, restrict to non-data views or fallback to UploadZone
+    if (!sheetData && !['settings', 'auth', 'upload'].includes(currentSection)) {
+      return <UploadZone onDataLoaded={handleDataLoaded} />;
+    }
+
     switch (currentSection) {
       case 'dashboard':
         return (
@@ -277,7 +283,7 @@ export default function App() {
           searchValue={searchValue}
           sidebarCollapsed={sidebarCollapsed}
           setSidebarCollapsed={setSidebarCollapsed}
-          fileName={sheetData.fileName}
+          fileName={sheetData?.fileName || 'No File Uploaded'}
           onLogout={async () => {
             if (localStorage.getItem('codeAuth') === 'true') {
               localStorage.removeItem('codeAuth');

@@ -11,10 +11,13 @@ import {
   TrendingUp,
   ShieldCheck,
   Mail,
-  Phone
+  Phone,
+  Upload,
+  Loader2
 } from 'lucide-react';
 
-export default function LandingPage({ onDataLoaded }) {
+export default function LandingPage({ onDataLoaded, onSkip }) {
+  const [isUploading, setIsUploading] = useState(false);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -32,6 +35,13 @@ export default function LandingPage({ onDataLoaded }) {
       y: 0,
       opacity: 1,
       transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] }
+    }
+  };
+
+  const handleFileUpload = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setIsUploading(true);
+      onDataLoaded(e.target.files[0]);
     }
   };
 
@@ -187,6 +197,12 @@ export default function LandingPage({ onDataLoaded }) {
             <ArrowRight className="w-4 h-4 ml-1" />
           </button>
 
+          <button 
+            onClick={onSkip}
+            className="flex items-center justify-center px-8 py-4 rounded-xl font-medium text-text-main bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 transition-all duration-300 hover:scale-[1.02]"
+          >
+            Enter Dashboard Directly
+          </button>
         </motion.div>
 
         {/* Feature Cards Grid */}
