@@ -32,22 +32,32 @@ export default function App() {
     setTheme(isDark ? 'dark' : 'light');
   }, []);
 
-  // Supabase session management
+  // Supabase session management & Custom Code Auth
   useEffect(() => {
+    // 1. Check custom code auth first
+    if (localStorage.getItem('codeAuth') === 'true') {
+      setIsAuthenticated(true);
+      setAuthLoading(false);
+      return;
+    }
+
+    // 2. Check Supabase config
     if (!isSupabaseConfigured || !supabase) {
       setAuthLoading(false);
       return;
     }
 
-    // Check for an existing session on mount
+    // 3. Check for an existing session on mount
     supabase.auth.getSession().then(({ data: { session } }) => {
       setIsAuthenticated(!!session);
       setAuthLoading(false);
     });
 
-    // Listen for sign-in / sign-out events
+    // Listen for sign-in / sign-out events (only if not using custom code)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAuthenticated(!!session);
+      if (localStorage.getItem('codeAuth') !== 'true') {
+        setIsAuthenticated(!!session);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -257,7 +267,11 @@ export default function App() {
           setSidebarCollapsed={setSidebarCollapsed}
           fileName={sheetData.fileName}
           onLogout={async () => {
-            await supabase.auth.signOut();
+            if (localStorage.getItem('codeAuth') === 'true') {
+              localStorage.removeItem('codeAuth');
+            } else if (isSupabaseConfigured && supabase) {
+              await supabase.auth.signOut();
+            }
             localStorage.removeItem('rememberedAuth');
             setIsAuthenticated(false);
           }}

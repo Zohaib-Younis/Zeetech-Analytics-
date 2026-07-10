@@ -3,14 +3,20 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl  = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseKey  = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-export const isSupabaseConfigured = !!(supabaseUrl && supabaseKey);
+let supabaseClient = null;
+let configured = !!(supabaseUrl && supabaseKey);
 
-if (!isSupabaseConfigured) {
+if (configured) {
+  try {
+    supabaseClient = createClient(supabaseUrl, supabaseKey);
+  } catch (err) {
+    console.error('Failed to initialize Supabase client. Check if your URL is valid:', err);
+    configured = false;
+  }
+} else {
   console.error('Missing Supabase environment variables! VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY must be set.');
 }
 
-// We still try to create a client (might be invalid URL, which is fine, we just won't use it successfully)
-export const supabase = isSupabaseConfigured 
-  ? createClient(supabaseUrl, supabaseKey) 
-  : null;
+export const isSupabaseConfigured = configured;
+export const supabase = supabaseClient;
 

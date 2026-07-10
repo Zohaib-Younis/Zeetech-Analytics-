@@ -1,17 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BrainCircuit, Lock, Mail, ArrowRight, Loader2, KeyRound, ArrowLeft } from 'lucide-react';
+import { BrainCircuit, Lock, Mail, ArrowRight, Loader2, KeyRound, ArrowLeft, ShieldAlert } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
+// Web3Forms API Endpoint
+const WEB3FORMS_URL = 'https://api.web3forms.com/submit';
+const ADMIN_EMAIL = 'mr.zohaibyounis@gmail.com';
+
 export default function Login({ onLogin }) {
-  const [view, setView]           = useState('login'); // 'login' | 'forgot'
+  const [view, setView]           = useState('login'); // 'login' | 'forgot' | 'verify'
+  
+  // Login State
   const [email, setEmail]         = useState('');
   const [password, setPassword]   = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
+  
+  // Forgot Password / Custom Flow State
   const [forgotEmail, setForgotEmail] = useState('');
+  const [inputCode, setInputCode]     = useState('');
+  const [generatedCode, setGeneratedCode] = useState('');
+  
+  // UI State
   const [error, setError]         = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [loading, setLoading]     = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+
+  // Rate Limiting
+  const [attemptsRemaining, setAttemptsRemaining] = useState(5);
+
+  useEffect(() => {
+    // Load attempts from local storage on mount
+    const saved = localStorage.getItem('passwordResetAttempts');
+    if (saved !== null) {
+      setAttemptsRemaining(parseInt(saved, 10));
+    }
+  }, []);
+
+  const updateAttempts = (newCount) => {
+    setAttemptsRemaining(newCount);
+    localStorage.setItem('passwordResetAttempts', newCount.toString());
+  };
 
   // ── Login handler ────────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
@@ -44,26 +72,77 @@ export default function Login({ onLogin }) {
     }
   };
 
-  // ── Forgot password handler ───────────────────────────────────────────────
-  const handleForgotPassword = async (e) => {
+  // ── Custom Forgot Password (Web3Forms) ──────────────────────────────────
+  const handleRequestCode = async (e) => {
     e.preventDefault();
     setError('');
     setSuccessMsg('');
+
+    if (attemptsRemaining <= 0) {
+      setError('You have exceeded the maximum number of password reset requests (5).');
+      return;
+    }
+
+    // You MUST provide a Web3Forms Access key via Vite env vars, or hardcode it here if absolutely needed.
+    const accessKey = import.meta.env.VITE_WEB3FORMS_ACCESS_KEY;
+    if (!accessKey) {
+      setError('System Error: Web3Forms Access Key is missing. Check your .env file or Vercel configuration.');
+      return;
+    }
+
     setLoading(true);
+    
+    // Generate a 6-digit code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    setGeneratedCode(code);
+
     try {
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-        forgotEmail.trim(),
-        { redirectTo: window.location.origin }
-      );
-      if (resetError) {
-        setError(resetError.message);
+      const response = await fetch(WEB3FORMS_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          access_key: accessKey,
+          subject: 'Security Alert: Password Reset Code Request',
+          from_name: 'HawkEye Intelligence',
+          // Send TO the admin email
+          email: ADMIN_EMAIL, 
+          message: `User ${forgotEmail.trim()} requested a password reset.\n\nTheir secure login code is: ${code}\n\nProvide this code to the user securely.`,
+        })
+      });
+
+      const json = await response.json();
+
+      if (response.ok && json.success) {
+        updateAttempts(attemptsRemaining - 1);
+        setSuccessMsg(`Code sent! You have ${attemptsRemaining - 1} requests remaining.`);
+        setTimeout(() => {
+          setView('verify');
+          setSuccessMsg('');
+        }, 1500);
       } else {
-        setSuccessMsg(`Password reset link sent to ${forgotEmail}. Check your inbox.`);
+        setError(json.message || 'Failed to send code via Web3Forms.');
       }
-    } catch {
+    } catch (err) {
       setError('Connection error. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ── Verify Code ──────────────────────────────────────────────────────────
+  const handleVerifyCode = (e) => {
+    e.preventDefault();
+    setError('');
+    
+    if (inputCode.trim() === generatedCode) {
+      // Bypass Supabase Auth completely
+      localStorage.setItem('codeAuth', 'true');
+      onLogin(true);
+    } else {
+      setError('Invalid code. Please check the code and try again.');
     }
   };
 
@@ -75,31 +154,33 @@ export default function Login({ onLogin }) {
       <div className="sm:mx-auto sm:w-full sm:max-w-md z-10">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex justify-center mb-6">
           <div className="p-3 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/30">
-            {view === 'forgot' ? <KeyRound className="w-8 h-8" /> : <BrainCircuit className="w-8 h-8" />}
+            {view === 'forgot' ? <ShieldAlert className="w-8 h-8" /> : view === 'verify' ? <KeyRound className="w-8 h-8" /> : <BrainCircuit className="w-8 h-8" />}
           </div>
         </motion.div>
         <motion.h2 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
           className="text-center text-3xl font-display font-extrabold text-text-main">
-          {view === 'forgot' ? 'Reset Password' : 'HawkEye Intelligence'}
+          {view === 'forgot' ? 'Request Code' : view === 'verify' ? 'Enter Code' : 'HawkEye Intelligence'}
         </motion.h2>
         <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
           className="mt-2 text-center text-sm text-text-muted">
           {view === 'forgot'
-            ? 'Enter your email and we\'ll send a reset link'
+            ? `Admin will receive your code (Attempts left: ${attemptsRemaining})`
+            : view === 'verify'
+            ? `Enter the 6-digit code provided by admin`
             : 'Sign in to access your analytics dashboard'}
         </motion.p>
       </div>
 
       <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
         className="mt-8 sm:mx-auto sm:w-full sm:max-w-md z-10">
-        <div className="glass-card py-8 px-4 shadow-2xl sm:rounded-3xl sm:px-10 border border-border-main">
+        <div className="glass-card py-8 px-4 shadow-2xl sm:rounded-3xl sm:px-10 border border-border-main overflow-hidden">
 
           <AnimatePresence mode="wait">
 
             {/* ── LOGIN FORM ── */}
             {view === 'login' && (
-              <motion.form key="login" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }} className="space-y-6" onSubmit={handleSubmit}>
+              <motion.form key="login" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }} className="space-y-6" onSubmit={handleSubmit}>
                 <div>
                   <label className="block text-sm font-medium text-text-main mb-1">Email address</label>
                   <div className="relative">
@@ -150,17 +231,17 @@ export default function Login({ onLogin }) {
               </motion.form>
             )}
 
-            {/* ── FORGOT PASSWORD FORM ── */}
+            {/* ── FORGOT PASSWORD (REQUEST CODE) FORM ── */}
             {view === 'forgot' && (
-              <motion.form key="forgot" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }} className="space-y-6" onSubmit={handleForgotPassword}>
+              <motion.form key="forgot" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }} className="space-y-6" onSubmit={handleRequestCode}>
                 <div>
-                  <label className="block text-sm font-medium text-text-main mb-1">Email address</label>
+                  <label className="block text-sm font-medium text-text-main mb-1">Your Email address</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <Mail className="h-5 w-5 text-text-muted" />
                     </div>
-                    <input type="email" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} disabled={loading}
+                    <input type="email" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} disabled={loading || attemptsRemaining <= 0}
                       className="appearance-none block w-full pl-10 pr-3 py-2.5 border border-border-main rounded-xl shadow-sm placeholder-text-muted bg-dashboard-bg/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 sm:text-sm text-text-main transition-colors"
                       placeholder="adeel@gmail.com" required />
                   </div>
@@ -179,17 +260,68 @@ export default function Login({ onLogin }) {
                   </motion.p>
                 )}
 
-                <button type="submit" disabled={loading}
+                <button type="submit" disabled={loading || attemptsRemaining <= 0}
                   className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-xl shadow-md text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 transition-all disabled:opacity-60 disabled:cursor-not-allowed">
-                  {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending…</> : <><KeyRound className="w-4 h-4" /> Send Reset Link</>}
+                  {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending…</> : <><ShieldAlert className="w-4 h-4" /> Request Code</>}
                 </button>
 
-                <button type="button" onClick={() => { setView('login'); setError(''); setSuccessMsg(''); }}
-                  className="w-full flex items-center justify-center gap-1.5 text-sm text-text-muted hover:text-purple-500 font-semibold transition-colors">
-                  <ArrowLeft className="w-4 h-4" /> Back to Sign In
+                <div className="flex items-center justify-between pt-2">
+                  <button type="button" onClick={() => { setView('login'); setError(''); setSuccessMsg(''); }}
+                    className="flex items-center gap-1.5 text-sm text-text-muted hover:text-purple-500 font-semibold transition-colors">
+                    <ArrowLeft className="w-4 h-4" /> Sign In
+                  </button>
+                  {generatedCode && (
+                    <button type="button" onClick={() => { setView('verify'); setError(''); setSuccessMsg(''); }}
+                      className="text-sm text-purple-500 hover:text-purple-400 font-semibold transition-colors">
+                      Enter Code →
+                    </button>
+                  )}
+                </div>
+              </motion.form>
+            )}
+
+            {/* ── VERIFY CODE FORM ── */}
+            {view === 'verify' && (
+              <motion.form key="verify" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }} className="space-y-6" onSubmit={handleVerifyCode}>
+                
+                <div className="text-center mb-6">
+                  <p className="text-sm text-text-muted">
+                    We sent a 6-digit code to the admin.
+                    <br />Please enter it below to login.
+                  </p>
+                </div>
+
+                <div>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <KeyRound className="h-5 w-5 text-text-muted" />
+                    </div>
+                    <input type="text" value={inputCode} onChange={(e) => setInputCode(e.target.value)} disabled={loading}
+                      className="appearance-none block w-full pl-10 pr-3 py-3 text-center tracking-[0.5em] font-mono text-xl border border-border-main rounded-xl shadow-sm placeholder-text-muted/50 bg-dashboard-bg/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-text-main transition-colors"
+                      placeholder="------" maxLength={6} required />
+                  </div>
+                </div>
+
+                {error && (
+                  <motion.p initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
+                    className="text-sm text-red-500 text-center bg-red-500/10 py-2 rounded-lg border border-red-500/20">
+                    {error}
+                  </motion.p>
+                )}
+
+                <button type="submit" disabled={inputCode.length !== 6}
+                  className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-xl shadow-md text-sm font-medium text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 transition-all disabled:opacity-60 disabled:cursor-not-allowed">
+                  Verify & Login <ArrowRight className="w-4 h-4 ml-1" />
+                </button>
+
+                <button type="button" onClick={() => { setView('forgot'); setError(''); }}
+                  className="w-full flex items-center justify-center gap-1.5 text-sm text-text-muted hover:text-purple-500 font-semibold transition-colors mt-2">
+                  <ArrowLeft className="w-4 h-4" /> Back to Request
                 </button>
               </motion.form>
             )}
+
           </AnimatePresence>
         </div>
 
