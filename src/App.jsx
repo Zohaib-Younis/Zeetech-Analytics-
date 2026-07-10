@@ -223,7 +223,19 @@ export default function App() {
           />
         );
       case 'auth':
-        return <AuthSettingsPanel />;
+        return (
+          <AuthSettingsPanel 
+            onLogout={async () => {
+              if (localStorage.getItem('codeAuth') === 'true') {
+                localStorage.removeItem('codeAuth');
+              } else if (isSupabaseConfigured && supabase) {
+                await supabase.auth.signOut();
+              }
+              localStorage.removeItem('rememberedAuth');
+              setIsAuthenticated(false);
+            }} 
+          />
+        );
       case 'settings':
         return (
           <SettingsPanel 

@@ -66,7 +66,7 @@ function InputField({ label, type = 'text', value, onChange, placeholder, disabl
 }
 
 // ── Change Email ─────────────────────────────────────────────────────────────
-function ChangeEmailSection() {
+function ChangeEmailSection({ onLogout }) {
   const [newEmail, setNewEmail] = useState('');
   const [loading, setLoading]  = useState(false);
   const [msg, setMsg]          = useState({ type: '', text: '' });
@@ -88,8 +88,11 @@ function ChangeEmailSection() {
       if (error) {
         setMsg({ type: 'error', text: error.message });
       } else {
-        setMsg({ type: 'success', text: 'Confirmation email sent to both addresses. Check your inbox to confirm the change.' });
+        setMsg({ type: 'success', text: 'Confirmation email sent! You will now be logged out. Please confirm the new email to log back in.' });
         setNewEmail('');
+        setTimeout(() => {
+          if (onLogout) onLogout();
+        }, 3000);
       }
     } catch {
       setMsg({ type: 'error', text: 'Connection error. Please try again.' });
@@ -125,7 +128,7 @@ function ChangeEmailSection() {
 }
 
 // ── Change Password ───────────────────────────────────────────────────────────
-function ChangePasswordSection() {
+function ChangePasswordSection({ onLogout }) {
   const [newPass, setNewPass]     = useState('');
   const [confirmPass, setConfirmPass] = useState('');
   const [showNew, setShowNew]     = useState(false);
@@ -144,8 +147,11 @@ function ChangePasswordSection() {
       if (error) {
         setMsg({ type: 'error', text: error.message });
       } else {
-        setMsg({ type: 'success', text: 'Password updated successfully!' });
+        setMsg({ type: 'success', text: 'Password updated successfully! Logging you out...' });
         setNewPass(''); setConfirmPass('');
+        setTimeout(() => {
+          if (onLogout) onLogout();
+        }, 2000);
       }
     } catch {
       setMsg({ type: 'error', text: 'Connection error. Please try again.' });
@@ -231,7 +237,7 @@ function CreateUserSection() {
 }
 
 // ── Main Auth Settings Panel ─────────────────────────────────────────────────
-export default function AuthSettingsPanel() {
+export default function AuthSettingsPanel({ onLogout }) {
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -247,8 +253,8 @@ export default function AuthSettingsPanel() {
 
       {/* Cards grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ChangeEmailSection />
-        <ChangePasswordSection />
+        <ChangeEmailSection onLogout={onLogout} />
+        <ChangePasswordSection onLogout={onLogout} />
       </div>
 
       <CreateUserSection />
