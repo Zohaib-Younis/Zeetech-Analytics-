@@ -13,6 +13,7 @@ import {
   Filter,
   Download,
   FileSpreadsheet,
+  FileText,
   Layers,
   ChevronUp,
   ChevronDown,
@@ -341,16 +342,16 @@ function PivotGrid({ rowKeys, colKeys, lookup, valueFields, sortState, onSort })
               })}
             </tr>
           ))}
-          {/* Grand Total row */}
+          {/* Grand Total row — always Count */}
           <tr className="border-t-2 border-border-main bg-purple-500/[0.04] font-bold">
             <td className="py-2.5 px-3 text-text-main border-r border-border-main text-xs">Grand Total</td>
             {headerCells.map(({ key, colKey }, hi) => {
               const vf = valueFields[hi % valueFields.length];
               const allVals = sorted.flatMap(rk => lookup[rk]?.[colKey]?.[vf.field] ?? []);
-              const v = aggregate(allVals, vf.agg);
+              const v = aggregate(allVals, 'Count');
               return (
                 <td key={key} className="py-2.5 px-3 text-right font-mono text-purple-600 dark:text-purple-400 border-r border-border-main">
-                  {fmt(v, vf.agg)}
+                  {fmt(v, 'Count')}
                 </td>
               );
             })}
@@ -437,7 +438,7 @@ export default function PivotTable({ data }) {
 
   const getDefaultAggs = (availableHeaders) => {
     const initialAggs = {};
-    if (availableHeaders.includes('Duration')) initialAggs['Duration'] = 'Sum';
+    if (availableHeaders.includes('Duration')) initialAggs['Duration'] = 'Count';
     return initialAggs;
   };
 
@@ -487,7 +488,7 @@ export default function PivotTable({ data }) {
     });
     // Default agg for values
     if (toZone === 'values') {
-      setValueAggs(prev => ({ ...prev, [field]: prev[field] ?? 'Sum' }));
+      setValueAggs(prev => ({ ...prev, [field]: prev[field] ?? 'Count' }));
     }
     // Reset filter when removed
     if (fromZone === 'filters') {
@@ -508,7 +509,7 @@ export default function PivotTable({ data }) {
     const zone = type === 'number' ? 'values' : 'rows';
     setZones(prev => ({ ...prev, [zone]: [...prev[zone], field] }));
     if (zone === 'values') {
-      setValueAggs(prev => ({ ...prev, [field]: prev[field] ?? 'Sum' }));
+      setValueAggs(prev => ({ ...prev, [field]: prev[field] ?? 'Count' }));
     }
   }, [columnTypes]);
 
@@ -529,7 +530,7 @@ export default function PivotTable({ data }) {
 
   // Build value fields array with agg
   const valueFields = useMemo(() =>
-    zones.values.map(f => ({ field: f, agg: valueAggs[f] ?? 'Sum' })),
+    zones.values.map(f => ({ field: f, agg: valueAggs[f] ?? 'Count' })),
     [zones.values, valueAggs]
   );
 
@@ -540,6 +541,90 @@ export default function PivotTable({ data }) {
   );
 
 
+
+  // ── PDF Export ──────────────────────────────────────────────────────────
+  const exportPDF = useCallback(() => {
+    if (rowKeys.length === 0 || valueFields.length === 0) {
+      alert('Nothing to export. Please add row and value fields first.');
+      return;
+    }
+
+    const date = new Date().toLocaleDateString();
+
+    // Build header cells for PDF
+    const pdfHeaders = ['Row Label', ...colKeys.flatMap(ck =>
+      valueFields.map(vf => valueFields.length > 1 ? `${ck} | Count(${vf.field})` : ck)
+    )];
+
+    // Build data rows for PDF
+    const pdfRows = rowKeys.map(rk => [
+      rk || '(blank)',
+      ...colKeys.flatMap(ck =>
+        valueFields.map(vf => {
+          const vals = lookup[rk]?.[ck]?.[vf.field] ?? [];
+          return fmt(aggregate(vals, vf.agg), vf.agg);
+        })
+      ),
+    ]);
+
+    // Grand Total row (always Count)
+    const grandTotalRow = [
+      'Grand Total',
+      ...colKeys.flatMap(ck =>
+        valueFields.map(vf => {
+          const allVals = rowKeys.flatMap(rk => lookup[rk]?.[ck]?.[vf.field] ?? []);
+          return fmt(aggregate(allVals, 'Count'), 'Count');
+        })
+      ),
+    ];
+
+    const colW = Math.max(80, Math.floor(680 / pdfHeaders.length));
+    const cellH = 22;
+
+    // Build an HTML string and trigger print
+    const tableRows = [
+      `<tr>${pdfHeaders.map(h => `<th>${h}</th>`).join('')}</tr>`,
+      ...pdfRows.map((row, i) =>
+        `<tr class="${i % 2 === 0 ? 'even' : 'odd'}">${row.map(c => `<td>${c}</td>`).join('')}</tr>`
+      ),
+      `<tr class="grand-total">${grandTotalRow.map(c => `<td>${c}</td>`).join('')}</tr>`,
+    ].join('');
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>Pivot Table Export — ${date}</title>
+        <style>
+          * { box-sizing: border-box; margin: 0; padding: 0; }
+          body { font-family: Arial, sans-serif; font-size: 11px; color: #111; padding: 24px; }
+          h1 { font-size: 16px; margin-bottom: 4px; color: #4f46e5; }
+          p.sub { font-size: 10px; color: #666; margin-bottom: 16px; }
+          table { border-collapse: collapse; width: 100%; }
+          th { background: #4f46e5; color: #fff; padding: 7px 10px; text-align: left; font-size: 10px; border: 1px solid #3730a3; white-space: nowrap; }
+          td { padding: 6px 10px; border: 1px solid #e5e7eb; text-align: right; white-space: nowrap; }
+          td:first-child { text-align: left; font-weight: 600; }
+          tr.even td { background: #f9f8ff; }
+          tr.grand-total td { background: #ede9fe; font-weight: 700; color: #4f46e5; border-top: 2px solid #4f46e5; }
+          @media print { @page { margin: 15mm; } }
+        </style>
+      </head>
+      <body>
+        <h1>Pivot Table Report</h1>
+        <p class="sub">Exported on ${date} &nbsp;|&nbsp; ${rowKeys.length} rows &nbsp;|&nbsp; Aggregation: Count</p>
+        <table>${tableRows}</table>
+      </body>
+      </html>
+    `;
+
+    const win = window.open('', '_blank', 'width=900,height=700');
+    if (!win) { alert('Pop-up blocked — please allow pop-ups for this site.'); return; }
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    setTimeout(() => { win.print(); }, 400);
+  }, [rowKeys, colKeys, lookup, valueFields]);
 
   // Export pivot results
   const exportPivot = useCallback((format) => {
@@ -638,6 +723,12 @@ export default function PivotTable({ data }) {
                 className="flex items-center gap-1.5 text-xs font-medium text-white bg-purple-600 hover:bg-purple-500 px-3 py-1.5 rounded-xl transition-all shadow-sm"
               >
                 <FileSpreadsheet className="w-3.5 h-3.5" /> Export Excel
+              </button>
+              <button
+                onClick={exportPDF}
+                className="flex items-center gap-1.5 text-xs font-medium text-white bg-red-600 hover:bg-red-500 px-3 py-1.5 rounded-xl transition-all shadow-sm"
+              >
+                <FileText className="w-3.5 h-3.5" /> Export PDF
               </button>
             </>
           )}
@@ -792,7 +883,15 @@ export default function PivotTable({ data }) {
                   <LayoutGrid className="w-4 h-4 text-purple-500" />
                   Pivot Results
                 </h4>
-                <span className="text-[10px] text-text-muted">Click column headers to sort</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] text-text-muted">Click column headers to sort</span>
+                  <button
+                    onClick={exportPDF}
+                    className="flex items-center gap-1.5 text-[11px] font-semibold text-white bg-red-600 hover:bg-red-500 px-3 py-1.5 rounded-lg transition-all shadow-sm"
+                  >
+                    <FileText className="w-3.5 h-3.5" /> PDF
+                  </button>
+                </div>
               </div>
             )}
             <div className={hasResult ? 'p-4' : ''}>

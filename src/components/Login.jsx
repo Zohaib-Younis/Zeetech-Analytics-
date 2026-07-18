@@ -10,7 +10,7 @@ export default function Login({ onLogin }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (email === 'adeel@gmail.com' && password === 'humaira') {
+    if (email === 'adeel@gmail.com' && password === 'adeel101') {
       if (rememberMe) {
         localStorage.setItem('rememberedAuth', 'true');
       }
