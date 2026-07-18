@@ -10,7 +10,8 @@ import {
   ChevronLeft,
   ChevronRight,
   BrainCircuit,
-  LayoutGrid
+  LayoutGrid,
+  ShieldCheck
 } from 'lucide-react';
 
 export default function Sidebar({
@@ -28,6 +29,7 @@ export default function Sidebar({
     { id: 'locations', name: 'Top Locations', icon: MapPin, requiresData: true },
     { id: 'pivot', name: 'Pivot Table', icon: LayoutGrid, requiresData: true, badge: 'New' },
     { id: 'export', name: 'Export Center', icon: Download, requiresData: true },
+    { id: 'auth', name: 'Security & Auth', icon: ShieldCheck, requiresData: false },
     { id: 'settings', name: 'Settings', icon: Settings, requiresData: false }
   ];
 

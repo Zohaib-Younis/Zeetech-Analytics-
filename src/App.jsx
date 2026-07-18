@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { supabase } from './lib/supabase';
 import LandingPage from './components/LandingPage';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
@@ -12,6 +13,7 @@ import PivotTable from './components/PivotTable';
 import ReportsPanel from './components/ReportsPanel';
 import ExportPanel from './components/ExportPanel';
 import SettingsPanel from './components/SettingsPanel';
+import AuthSettingsPanel from './components/AuthSettingsPanel';
 import Login from './components/Login';
 
 export default function App() {
@@ -21,12 +23,29 @@ export default function App() {
   const [theme, setTheme] = useState('light');
   const [searchValue, setSearchValue] = useState('');
   const [selectedColumns, setSelectedColumns] = useState({});
-  const [isAuthenticated, setIsAuthenticated] = useState(() => localStorage.getItem('rememberedAuth') === 'true');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authLoading, setAuthLoading]         = useState(true);
 
   // Detect and set initial dark/light class
   useEffect(() => {
     const isDark = document.documentElement.classList.contains('dark');
     setTheme(isDark ? 'dark' : 'light');
+  }, []);
+
+  // Supabase session management
+  useEffect(() => {
+    // Check for an existing session on mount
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session);
+      setAuthLoading(false);
+    });
+
+    // Listen for sign-in / sign-out events
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   // Update selected columns schema map when data changes
@@ -61,6 +80,18 @@ export default function App() {
     setSearchValue('');
     setCurrentSection('landing');
   };
+
+  // Show nothing while checking session (avoids login flash)
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-dashboard-bg flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 rounded-full border-4 border-purple-600 border-t-transparent animate-spin" />
+          <p className="text-sm text-text-muted">Checking session…</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return <Login onLogin={() => setIsAuthenticated(true)} />;
@@ -152,6 +183,8 @@ export default function App() {
             setSelectedColumns={setSelectedColumns}
           />
         );
+      case 'auth':
+        return <AuthSettingsPanel />;
       case 'settings':
         return (
           <SettingsPanel 
@@ -194,9 +227,10 @@ export default function App() {
           sidebarCollapsed={sidebarCollapsed}
           setSidebarCollapsed={setSidebarCollapsed}
           fileName={sheetData.fileName}
-          onLogout={() => {
-            setIsAuthenticated(false);
+          onLogout={async () => {
+            await supabase.auth.signOut();
             localStorage.removeItem('rememberedAuth');
+            setIsAuthenticated(false);
           }}
         />
 
