@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from './lib/supabase';
+import { supabase, isSupabaseConfigured } from './lib/supabase';
 import LandingPage from './components/LandingPage';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
@@ -34,6 +34,11 @@ export default function App() {
 
   // Supabase session management
   useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) {
+      setAuthLoading(false);
+      return;
+    }
+
     // Check for an existing session on mount
     supabase.auth.getSession().then(({ data: { session } }) => {
       setIsAuthenticated(!!session);
@@ -80,6 +85,30 @@ export default function App() {
     setSearchValue('');
     setCurrentSection('landing');
   };
+
+  // Handle missing Vercel environment variables directly on screen
+  if (!isSupabaseConfigured) {
+    return (
+      <div className="min-h-screen bg-dashboard-bg flex items-center justify-center p-6">
+        <div className="glass-card max-w-lg w-full p-8 rounded-3xl border border-red-500/20 space-y-4 text-center shadow-2xl shadow-red-500/10">
+          <div className="w-16 h-16 mx-auto rounded-full bg-red-500/10 flex items-center justify-center text-red-500 font-bold text-2xl">!</div>
+          <h1 className="text-2xl font-bold text-text-main">Missing Configuration</h1>
+          <p className="text-sm text-text-muted">
+            The application failed to load because the Supabase environment variables are missing.
+          </p>
+          <div className="bg-red-500/10 p-4 rounded-xl text-xs text-red-500 text-left space-y-2 border border-red-500/20">
+            <p><strong>Fixing this in Vercel:</strong></p>
+            <ol className="list-decimal pl-4 space-y-1">
+              <li>Go to Vercel Dashboard → Project → Settings → Environment Variables</li>
+              <li>Add <code>VITE_SUPABASE_URL</code></li>
+              <li>Add <code>VITE_SUPABASE_ANON_KEY</code></li>
+              <li><strong>Crucial:</strong> Go to Deployments and redeploy the project!</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Show nothing while checking session (avoids login flash)
   if (authLoading) {
